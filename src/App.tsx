@@ -4,10 +4,13 @@ import {
   FlaskConical,
   Lightbulb,
   MessageCircle,
+  Pencil,
   Plus,
   Search,
   Sparkles,
   Tags,
+  Trash2,
+  X,
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
@@ -30,9 +33,10 @@ type Entry = {
   nextAction: string;
   fun: string;
   createdAt: string;
+  updatedAt?: string;
 };
 
-type View = 'dashboard' | 'list' | 'new' | 'detail';
+type View = 'dashboard' | 'list' | 'new' | 'edit' | 'detail';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -113,9 +117,23 @@ function App() {
     };
   }, [entries, sortedEntries]);
 
+  const startNewEntry = () => {
+    setDraft(emptyEntry());
+    setView('new');
+  };
+
   const saveEntry = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!draft.title.trim()) return;
+
+    if (view === 'edit') {
+      const updatedEntry = { ...draft, updatedAt: new Date().toISOString() };
+      setEntries((current) => current.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry)));
+      setSelectedId(updatedEntry.id);
+      setView('detail');
+      return;
+    }
+
     const entry = { ...draft, createdAt: new Date().toISOString() };
     setEntries((current) => [entry, ...current]);
     setDraft(emptyEntry());
@@ -126,6 +144,28 @@ function App() {
   const openDetail = (id: string) => {
     setSelectedId(id);
     setView('detail');
+  };
+
+  const startEdit = (entry: Entry) => {
+    setDraft({ ...entry, categories: [...entry.categories] });
+    setSelectedId(entry.id);
+    setView('edit');
+  };
+
+  const deleteEntry = (id: string) => {
+    const target = entries.find((entry) => entry.id === id);
+    if (!target) return;
+    if (!window.confirm(`「${target.title}」を削除しますか？`)) return;
+
+    const remaining = entries.filter((entry) => entry.id !== id);
+    setEntries(remaining);
+    setSelectedId(remaining[0]?.id ?? null);
+    setView(remaining.length ? 'list' : 'dashboard');
+  };
+
+  const cancelEdit = () => {
+    setDraft(emptyEntry());
+    setView(selectedId ? 'detail' : 'list');
   };
 
   const toggleCategory = (category: Category) => {
@@ -157,7 +197,7 @@ function App() {
             <BookOpen size={18} aria-hidden="true" />
             観察一覧
           </button>
-          <button className={view === 'new' ? 'active' : ''} onClick={() => setView('new')}>
+          <button className={view === 'new' ? 'active' : ''} onClick={startNewEntry}>
             <Plus size={18} aria-hidden="true" />
             新規記録
           </button>
@@ -168,16 +208,23 @@ function App() {
       </aside>
 
       <section className="workspace">
-        {view === 'dashboard' && (
-          <Dashboard stats={stats} total={entries.length} openDetail={openDetail} />
-        )}
+        {view === 'dashboard' && <Dashboard stats={stats} total={entries.length} openDetail={openDetail} />}
         {view === 'list' && (
           <ListView entries={filteredEntries} query={query} setQuery={setQuery} openDetail={openDetail} />
         )}
-        {view === 'new' && (
-          <EntryForm draft={draft} setDraft={setDraft} saveEntry={saveEntry} toggleCategory={toggleCategory} />
+        {(view === 'new' || view === 'edit') && (
+          <EntryForm
+            draft={draft}
+            mode={view}
+            setDraft={setDraft}
+            saveEntry={saveEntry}
+            toggleCategory={toggleCategory}
+            cancelEdit={cancelEdit}
+          />
         )}
-        {view === 'detail' && selectedEntry && <DetailView entry={selectedEntry} />}
+        {view === 'detail' && selectedEntry && (
+          <DetailView entry={selectedEntry} startEdit={startEdit} deleteEntry={deleteEntry} />
+        )}
       </section>
     </main>
   );
@@ -310,22 +357,35 @@ function ListView({
 
 function EntryForm({
   draft,
+  mode,
   setDraft,
   saveEntry,
   toggleCategory,
+  cancelEdit,
 }: {
   draft: Entry;
+  mode: 'new' | 'edit';
   setDraft: (entry: Entry | ((entry: Entry) => Entry)) => void;
   saveEntry: (event: FormEvent<HTMLFormElement>) => void;
   toggleCategory: (category: Category) => void;
+  cancelEdit: () => void;
 }) {
   const update = (key: keyof Entry, value: string) => setDraft((current) => ({ ...current, [key]: value }));
+  const isEdit = mode === 'edit';
 
   return (
     <form className="view-stack form-view" onSubmit={saveEntry}>
-      <header className="page-header">
-        <p>New Observation</p>
-        <h2>出来事から仮説を残す</h2>
+      <header className="page-header action-header">
+        <div>
+          <p>{isEdit ? 'Edit Observation' : 'New Observation'}</p>
+          <h2>{isEdit ? '観察ログを編集する' : '出来事から仮説を残す'}</h2>
+        </div>
+        {isEdit && (
+          <button className="ghost-action" type="button" onClick={cancelEdit}>
+            <X size={18} aria-hidden="true" />
+            キャンセル
+          </button>
+        )}
       </header>
       <div className="form-grid">
         <label>
@@ -363,7 +423,7 @@ function EntryForm({
       <TextArea label="面白かったこと" value={draft.fun} onChange={(value) => update('fun', value)} />
       <button className="primary-action" type="submit">
         <Lightbulb size={18} aria-hidden="true" />
-        観察ログを保存
+        {isEdit ? '変更を保存' : '観察ログを保存'}
       </button>
     </form>
   );
@@ -378,7 +438,15 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
   );
 }
 
-function DetailView({ entry }: { entry: Entry }) {
+function DetailView({
+  entry,
+  startEdit,
+  deleteEntry,
+}: {
+  entry: Entry;
+  startEdit: (entry: Entry) => void;
+  deleteEntry: (id: string) => void;
+}) {
   const items = [
     ['きっかけ', entry.trigger],
     ['出来事', entry.event],
@@ -391,9 +459,21 @@ function DetailView({ entry }: { entry: Entry }) {
 
   return (
     <article className="view-stack detail-view">
-      <header className="page-header">
-        <p>{entry.date}</p>
-        <h2>{entry.title}</h2>
+      <header className="page-header action-header">
+        <div>
+          <p>{entry.date}</p>
+          <h2>{entry.title}</h2>
+        </div>
+        <div className="detail-actions">
+          <button className="ghost-action" type="button" onClick={() => startEdit(entry)}>
+            <Pencil size={18} aria-hidden="true" />
+            編集
+          </button>
+          <button className="danger-action" type="button" onClick={() => deleteEntry(entry.id)}>
+            <Trash2 size={18} aria-hidden="true" />
+            削除
+          </button>
+        </div>
       </header>
       <div className="detail-tags">
         {entry.categories.map((category) => (

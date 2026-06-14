@@ -82,6 +82,13 @@ button {
   line-height: 1.25;
 }
 
+.action-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
 .brand h1 {
   font-size: 1.35rem;
 }
@@ -97,6 +104,8 @@ button {
 
 .nav-tabs button,
 .primary-action,
+.ghost-action,
+.danger-action,
 .entry-row,
 .note-list button {
   border: 0;
@@ -354,6 +363,45 @@ button {
   background: #315d4a;
 }
 
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.ghost-action,
+.danger-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.ghost-action {
+  border: 1px solid #b8c6a9;
+  color: #244538;
+  background: #edf4e8;
+}
+
+.danger-action {
+  border: 1px solid #d6a99b;
+  color: #823728;
+  background: #fff0ea;
+}
+
+.ghost-action:hover {
+  background: #dfeada;
+}
+
+.danger-action:hover {
+  background: #ffe2d8;
+}
+
 .detail-view {
   max-width: 820px;
 }
@@ -404,6 +452,15 @@ button {
   .form-grid,
   .entry-row {
     grid-template-columns: 1fr;
+  }
+
+  .action-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .detail-actions {
+    justify-content: flex-start;
   }
 }
 
