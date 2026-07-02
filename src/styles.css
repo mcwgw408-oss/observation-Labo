@@ -481,3 +481,46 @@ button {
     font-size: 1.35rem;
   }
 }
+
+/* ===== 共通ナビゲーション ===== */
+.global-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 10px;
+  border: 1px solid #d8d2c2;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.global-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #d8d2c2;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #39443b;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.global-nav-link:hover {
+  border-color: #507a5b;
+}
+
+.global-nav-link.current {
+  border-color: #507a5b;
+  background: #e6efe7;
+  color: #3c5f47;
+}
+
+
+.app-shell > .global-nav {
+  grid-column: 1 / -1;
+  margin: 14px 16px 0;
+}
